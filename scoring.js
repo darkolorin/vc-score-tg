@@ -1,25 +1,10 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { 
-  TrendingUp, Users, Target, Award, 
-  Heart, Share2, Smartphone, Clock,
-  Zap, MessageCircle
-} from 'lucide-react';
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  ResponsiveContainer,
-} from 'recharts';
+const telegram = window.Telegram.WebApp;
+
+// Initialize Telegram Mini App
+telegram.ready();
 
 const StartupScorer = () => {
-  const [metrics, setMetrics] = useState({
+  const [metrics, setMetrics] = React.useState({
     dau: '',                    // Daily Active Users
     dauToMau: '',              // DAU/MAU Ratio (%)
     retentionD1: '',           // Day 1 Retention (%)
@@ -32,294 +17,231 @@ const StartupScorer = () => {
     appStoreRating: ''        // App Store Rating (1-5)
   });
 
-  const [scores, setScores] = useState(null);
-  const [overallScore, setOverallScore] = useState(null);
+  const [scores, setScores] = React.useState(null);
+  const [overallScore, setOverallScore] = React.useState(null);
 
-  const calculateMetricScore = (value, metric) => {
-    const scoringRules = {
-      dau: {
-        max: 100000,
-        weight: 0.15,
-        calculate: (v) => Math.min((v / 100000) * 100, 100),
-        benchmark: "Top consumer apps typically have 100k+ DAU"
-      },
-      dauToMau: {
-        max: 50,
-        weight: 0.15,
-        calculate: (v) => Math.min((v / 50) * 100, 100),
-        benchmark: "Best-in-class apps achieve 50%+ DAU/MAU ratio"
-      },
-      retentionD1: {
-        max: 60,
-        weight: 0.1,
-        calculate: (v) => Math.min((v / 60) * 100, 100),
-        benchmark: "Strong D1 retention is 60%+"
-      },
-      retentionD30: {
-        max: 20,
-        weight: 0.15,
-        calculate: (v) => Math.min((v / 20) * 100, 100),
-        benchmark: "Good D30 retention is 20%+"
-      },
-      viralityK: {
-        max: 1.5,
-        weight: 0.1,
-        calculate: (v) => Math.min((v / 1.5) * 100, 100),
-        benchmark: "Viral apps achieve K > 1"
-      },
-      sessionLength: {
-        max: 15,
-        weight: 0.05,
-        calculate: (v) => Math.min((v / 15) * 100, 100),
-        benchmark: "Engaging apps see 15+ minute sessions"
-      },
-      sessionsPerDay: {
-        max: 5,
-        weight: 0.1,
-        calculate: (v) => Math.min((v / 5) * 100, 100),
-        benchmark: "Top apps see 5+ sessions per day"
-      },
-      timeToValue: {
-        max: 5,
-        weight: 0.1,
-        calculate: (v) => Math.max(0, Math.min(((5 - v) / 5) * 100, 100)),
-        benchmark: "Best apps deliver value in < 5 minutes"
-      },
-      growthRate: {
-        max: 30,
-        weight: 0.05,
-        calculate: (v) => Math.min((v / 30) * 100, 100),
-        benchmark: "Strong apps grow 30%+ monthly"
-      },
-      appStoreRating: {
-        max: 5,
-        weight: 0.05,
-        calculate: (v) => Math.min((v / 5) * 100, 100),
-        benchmark: "Top apps maintain 4.5+ rating"
-      }
-    };
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setMetrics(prevMetrics => ({
+      ...prevMetrics,
+      [name]: value
+    }));
+  };
 
-    const rule = scoringRules[metric];
-    const numValue = parseFloat(value) || 0;
-    return {
-      raw: numValue,
-      score: rule.calculate(numValue),
-      weight: rule.weight,
-      weighted: rule.calculate(numValue) * rule.weight,
-      benchmark: rule.benchmark
-    };
+  const calculateMetricScore = (metric, value) => {
+    const parsedValue = parseFloat(value);
+    if (isNaN(parsedValue)) return 0;
+
+    switch (metric) {
+      case 'dau':
+        // Example: Score based on DAU thresholds
+        if (parsedValue > 1000000) return 100;
+        if (parsedValue > 500000) return 80;
+        if (parsedValue > 100000) return 60;
+        return 40;
+
+      case 'dauToMau':
+        // Example: Score based on DAU/MAU ratio
+        if (parsedValue > 30) return 100;
+        if (parsedValue > 20) return 80;
+        if (parsedValue > 10) return 60;
+        return 40;
+
+      case 'retentionD1':
+        // Example: Score based on Day 1 retention
+        if (parsedValue > 50) return 100;
+        if (parsedValue > 40) return 80;
+        if (parsedValue > 30) return 60;
+        return 40;
+
+      case 'retentionD30':
+        // Example: Score based on Day 30 retention
+        if (parsedValue > 20) return 100;
+        if (parsedValue > 15) return 80;
+        if (parsedValue > 10) return 60;
+        return 40;
+
+      case 'viralityK':
+        // Example: Score based on K-factor
+        if (parsedValue > 1.5) return 100;
+        if (parsedValue > 1.2) return 80;
+        if (parsedValue > 1.0) return 60;
+        return 40;
+
+      case 'sessionLength':
+        // Example: Score based on average session length
+        if (parsedValue > 30) return 100;
+        if (parsedValue > 20) return 80;
+        if (parsedValue > 10) return 60;
+        return 40;
+
+      case 'sessionsPerDay':
+        // Example: Score based on sessions per user per day
+        if (parsedValue > 5) return 100;
+        if (parsedValue > 3) return 80;
+        if (parsedValue > 1) return 60;
+        return 40;
+
+      case 'timeToValue':
+        // Example: Score based on time to core action
+        if (parsedValue < 5) return 100;
+        if (parsedValue < 10) return 80;
+        if (parsedValue < 20) return 60;
+        return 40;
+
+      case 'growthRate':
+        // Example: Score based on monthly growth rate
+        if (parsedValue > 20) return 100;
+        if (parsedValue > 10) return 80;
+        if (parsedValue > 5) return 60;
+        return 40;
+
+      case 'appStoreRating':
+        // Example: Score based on app store rating
+        if (parsedValue >= 4.5) return 100;
+        if (parsedValue >= 4.0) return 80;
+        if (parsedValue >= 3.5) return 60;
+        return 40;
+
+      default:
+        return 0;
+    }
   };
 
   const calculateScores = () => {
-    const metricScores = {};
+    const newScores = {};
     let totalScore = 0;
+    let count = 0;
 
-    Object.keys(metrics).forEach(metric => {
-      const result = calculateMetricScore(metrics[metric], metric);
-      metricScores[metric] = result;
-      totalScore += result.weighted;
-    });
+    for (const metric in metrics) {
+      const score = calculateMetricScore(metric, metrics[metric]);
+      newScores[metric] = {
+        score,
+        benchmark: 'Example Benchmark' // Replace with actual benchmark logic
+      };
+      totalScore += score;
+      count++;
+    }
 
-    setScores(metricScores);
-    setOverallScore(Math.round(totalScore));
-  };
-
-  const handleInputChange = (e) => {
-    setMetrics({
-      ...metrics,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getMetricFeedback = (metric, score) => {
-    const feedbackRules = {
-      dau: {
-        good: "Strong daily user base indicating product stickiness",
-        medium: "Growing user base - focus on activation",
-        poor: "Need to improve daily active users through better engagement"
-      },
-      dauToMau: {
-        good: "Excellent user engagement frequency",
-        medium: "Room to improve daily engagement",
-        poor: "Need to increase regular usage patterns"
-      },
-      retentionD1: {
-        good: "Strong first-day retention indicating good onboarding",
-        medium: "Improve onboarding to boost early retention",
-        poor: "Critical need to enhance first-time user experience"
-      },
-      retentionD30: {
-        good: "Excellent long-term retention showing strong product-market fit",
-        medium: "Focus on improving long-term value delivery",
-        poor: "Need to build stronger user habits"
-      },
-      viralityK: {
-        good: "Strong viral coefficient driving organic growth",
-        medium: "Some viral growth - optimize sharing features",
-        poor: "Enhance viral loops and sharing mechanisms"
-      },
-      sessionLength: {
-        good: "Users finding sustained value in each session",
-        medium: "Room to deepen engagement per session",
-        poor: "Need to increase session value and engagement"
-      },
-      sessionsPerDay: {
-        good: "Users have built strong daily habits",
-        medium: "Good usage frequency with room for improvement",
-        poor: "Focus on increasing usage frequency"
-      },
-      timeToValue: {
-        good: "Quick time-to-value showing efficient onboarding",
-        medium: "Optimize onboarding to deliver value faster",
-        poor: "Streamline path to core value proposition"
-      },
-      growthRate: {
-        good: "Strong organic growth trajectory",
-        medium: "Steady growth with potential to accelerate",
-        poor: "Need to identify and optimize growth levers"
-      },
-      appStoreRating: {
-        good: "Users highly satisfied with app experience",
-        medium: "Good satisfaction with room for improvement",
-        poor: "Address user feedback and improve experience"
-      }
-    };
-
-    if (score >= 80) return feedbackRules[metric].good;
-    if (score >= 60) return feedbackRules[metric].medium;
-    return feedbackRules[metric].poor;
-  };
-
-  const getMetricIcon = (metric) => {
-    const icons = {
-      dau: <Users className="w-4 h-4" />,
-      dauToMau: <Heart className="w-4 h-4" />,
-      retentionD1: <Zap className="w-4 h-4" />,
-      retentionD30: <Target className="w-4 h-4" />,
-      viralityK: <Share2 className="w-4 h-4" />,
-      sessionLength: <Clock className="w-4 h-4" />,
-      sessionsPerDay: <Smartphone className="w-4 h-4" />,
-      timeToValue: <TrendingUp className="w-4 h-4" />,
-      growthRate: <TrendingUp className="w-4 h-4" />,
-      appStoreRating: <MessageCircle className="w-4 h-4" />
-    };
-    return icons[metric];
+    setScores(newScores);
+    setOverallScore(totalScore / count);
   };
 
   const getMetricLabel = (metric) => {
     const labels = {
-      dau: "Daily Active Users",
-      dauToMau: "DAU/MAU Ratio (%)",
-      retentionD1: "Day 1 Retention (%)",
-      retentionD30: "Day 30 Retention (%)",
-      viralityK: "Virality K-factor",
-      sessionLength: "Avg Session Length (mins)",
-      sessionsPerDay: "Sessions per User per Day",
-      timeToValue: "Time to Core Action (mins)",
-      growthRate: "Monthly Growth Rate (%)",
-      appStoreRating: "App Store Rating (1-5)"
+      dau: 'Daily Active Users',
+      dauToMau: 'DAU/MAU Ratio',
+      retentionD1: 'Day 1 Retention',
+      retentionD30: 'Day 30 Retention',
+      viralityK: 'K-factor',
+      sessionLength: 'Avg Session Length',
+      sessionsPerDay: 'Sessions per User per Day',
+      timeToValue: 'Time to Core Action',
+      growthRate: 'Monthly Growth Rate',
+      appStoreRating: 'App Store Rating'
     };
     return labels[metric];
   };
 
-  const getRadarData = () => {
-    if (!scores) return [];
-    return Object.keys(scores).map(metric => ({
-      metric: getMetricLabel(metric).split(' ')[0],
-      score: scores[metric].score
-    }));
+  const getMetricIcon = (metric) => {
+    const icons = {
+      dau: '👥',
+      dauToMau: '❤️',
+      retentionD1: '⚡',
+      retentionD30: '🎯',
+      viralityK: '🔄',
+      sessionLength: '⏰',
+      sessionsPerDay: '📱',
+      timeToValue: '📈',
+      growthRate: '🚀',
+      appStoreRating: '💬'
+    };
+    return icons[metric];
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 75) return 'text-green-600';
+    if (score >= 50) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  const getMetricFeedback = (metric, score) => {
+    // Implement your logic to provide feedback based on the score
+    return `Feedback for ${metric}: ${score}`; // Example feedback
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Award className="w-6 h-6" />
+    <div className="card">
+      <div className="card-header">
+        <h1 className="card-title">
+          <span className="icon">🏆</span>
           Consumer App Scorer
-        </CardTitle>
-        <CardDescription>
+        </h1>
+        <p className="card-description">
           Evaluate your consumer app against key engagement and retention metrics
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </p>
+      </div>
+      <div className="card-content">
+        <div className="input-grid">
           {Object.keys(metrics).map(metric => (
             <div key={metric}>
-              <Label className="flex items-center gap-2">
-                {getMetricIcon(metric)}
+              <label className="input-label">
+                <span className="icon">{getMetricIcon(metric)}</span>
                 {getMetricLabel(metric)}
-              </Label>
-              <Input
+              </label>
+              <input
                 type="number"
                 name={metric}
                 value={metrics[metric]}
                 onChange={handleInputChange}
                 placeholder={`Enter ${getMetricLabel(metric).toLowerCase()}`}
-                className="mt-1"
+                className="input"
               />
             </div>
           ))}
         </div>
 
-        <Button 
+        <button 
           onClick={calculateScores}
-          className="w-full"
+          className="button"
         >
           Analyze App Metrics
-        </Button>
+        </button>
 
         {scores && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className={`text-4xl font-bold ${getScoreColor(overallScore)}`}>
+          <div className="results">
+            <div className="overall-score">
+              <div className={`score ${getScoreColor(overallScore)}`}>
                 {overallScore}/100
               </div>
-              <div className="mt-2 text-gray-600">
+              <div className="score-label">
                 Overall App Score
               </div>
             </div>
 
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={getRadarData()}>
-                  <PolarGrid />
-                  <PolarAngleAxis dataKey="metric" />
-                  <PolarRadiusAxis />
-                  <Radar
-                    name="Metrics"
-                    dataKey="score"
-                    stroke="#2563eb"
-                    fill="#2563eb"
-                    fillOpacity={0.3}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="space-y-4">
+            <div className="metric-scores">
               {Object.keys(scores).map(metric => (
-                <div key={metric} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Label className="flex items-center gap-2">
-                      {getMetricIcon(metric)}
+                <div key={metric} className="metric-score">
+                  <div className="metric-header">
+                    <label className="metric-label">
+                      <span className="icon">{getMetricIcon(metric)}</span>
                       {getMetricLabel(metric)}
-                    </Label>
-                    <span className={`font-bold ${getScoreColor(scores[metric].score)}`}>
+                    </label>
+                    <span className={`score ${getScoreColor(scores[metric].score)}`}>
                       {Math.round(scores[metric].score)}/100
                     </span>
                   </div>
-                  <Progress value={scores[metric].score} />
-                  <div className="space-y-1">
-                    <p className="text-sm text-gray-600">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress" 
+                      style={{width: `${scores[metric].score}%`}}
+                    ></div>
+                  </div>
+                  <div className="metric-feedback">
+                    <p className="feedback">
                       {getMetricFeedback(metric, scores[metric].score)}
                     </p>
-                    <p className="text-xs text-gray-500 italic">
+                    <p className="benchmark">
                       Benchmark: {scores[metric].benchmark}
                     </p>
                   </div>
@@ -328,9 +250,10 @@ const StartupScorer = () => {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
-export default StartupScorer;
+// Render the app
+ReactDOM.render(<StartupScorer />, document.getElementById('root'));
